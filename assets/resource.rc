@@ -1,0 +1,33 @@
+101 ICON "icon_light.ico"
+202 ICON "icon_dark.ico"
+1 VERSIONINFO
+FILEVERSION 0,0,0,1
+PRODUCTVERSION 0,0,0,1
+FILEOS 0x4
+FILETYPE 0x1
+{
+  BLOCK "StringFileInfo"
+  {
+    BLOCK "040904B0"
+    {
+      VALUE "CompanyName",      "h4rl"
+      VALUE "FileDescription",  "See your uptime in your tray bar with actions"
+      VALUE "FileVersion",      "0.0.0.1"
+      VALUE "InternalName",     "systemup"
+      VALUE "LegalCopyright",   "Copyright (C) 2025"
+      VALUE "LegalTrademarks",  "h4rl"
+      VALUE "OriginalFilename", "systemup.exe"
+      VALUE "ProductName",      "SystemUP"
+      VALUE "ProductVersion",   "0.0.0.1"
+      VALUE "Comments",         "See your uptime in your tray bar with actions"
+      VALUE "Homepage",         "https://github.com/h4rldev/systemup"
+      VALUE "License",          "BSD-3 Clause"
+    }
+  }
+  BLOCK "VarFileInfo"
+  {
+    VALUE "Translation", 0x409, 1200
+  }
+}
+
+1 MANIFEST "systemup.manifest"
