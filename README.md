@@ -1,6 +1,6 @@
 # SystemUP!
 
-A simple utility to show system uptime, and easily fix the main cause of system uptime increase in the system tray on Windows.
+A simple utility to show system uptime, and easily fix the main cause of your system uptime staying high on Windows systems.
 
 ## Building
 
