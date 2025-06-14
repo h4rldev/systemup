@@ -110,6 +110,7 @@ ${RED}  -b --build (no args)    ${CLEAR}  Build the project
 ${RED}  -t --test               ${CLEAR}  Run tests after building
 ${RED}  -d --debug              ${CLEAR}  Enable debug mode (enables verbose output, debugging symbols, and the address sanitizer)
 ${RED}  -o --output ${CYAN}<dir>${CLEAR}         Specify output directory (default: build)
+${RED}  -z --zip                ${CLEAR}  Create a zip file for release
 EOF
 exit 0
 }
@@ -232,6 +233,26 @@ build() {
   link_
 }
 
+zip_for_release() {
+  if [ ! -d "$OUTPUT_DIR" ]; then
+    print_line "error" "Output directory $OUTPUT_DIR does not exist. Please build first."
+  fi
+
+  if [ -f "$OUTPUT_DIR/systemup.zip" ]; then
+    rm "$OUTPUT_DIR/systemup.zip"
+  fi
+
+  print_line "info" "Zipping the build directory..."
+  if zip -j "$OUTPUT_DIR/systemup.zip" "$OUTPUT_DIR/bin/systemup.exe" ./assets/install.ps1 ./assets/readme.txt; then
+    print_line "success" "Successfully created systemup.zip in $OUTPUT_DIR"
+  else
+    print_line "error" "Failed to create systemup.zip"
+  fi
+
+  exit 0
+}
+
+
 if [ $# -eq 0 ]; then
   build
 fi
@@ -266,6 +287,9 @@ for arg in "$@"; do
     -o|--output)
       OUTPUT_DIR_IDX=$((i + 1))
       OUTPUT_DIR="${*:$OUTPUT_DIR_IDX:1}"
+      ;;
+    -z|--zip)
+      zip_for_release
       ;;
     *)
       usage
