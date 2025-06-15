@@ -42,7 +42,7 @@ TEST=false
 
 C_FLAGS="-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-but-set-variable -Wno-unused-but-set-parameter -Wno-unused-variable -pedantic -std=c99 -O2"
 INCLUDE_DIRS="-I./include"
-LD_FLAGS="-mwindows -lpowrprof -static"
+LD_FLAGS="-mwindows -lpowrprof -lversion"
 
 TEST_FILES=""
 C_FILES=""

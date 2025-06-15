@@ -1,10 +1,11 @@
 #include <windows.h>
 #include <shellapi.h>
-#include <stdio.h>
 #include <stringapiset.h>
 #include <wingdi.h>
 #include <winreg.h>
 #include <powrprof.h>
+
+#include <stdio.h>
 
 #define WM_TRAYICON (WM_USER + 1)
 #define ID_TRAY_EXIT 1001
@@ -12,13 +13,9 @@
 #define ID_TRAY_FAST_STARTUP 1003
 #define ID_TRAY_POWEROFF 1004
 #define ID_TRAY_RESTART 1005
-#define ID_TRAY_SLEEP 1006
-#define ID_TRAY_LOCK 1007
+#define ID_TRAY_LOCK 1006
 #define IDI_MYICON_LIGHT 101
 #define IDI_MYICON_DARK 202
-#define ID_BITMAP_EXIT 303
-#define ID_BITMAP_ERROR 303 // Using the same ID for the error bitmap
-#define ID_BITMAP_INFO 404
 #define TIMER_ID 1
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
@@ -76,6 +73,44 @@ int is_fast_startup_enabled() {
     }
     // If key or value not found, treat as disabled (or handle as error as desired)
     return 0;
+}
+
+char *get_version_string() {
+    static char version[64];
+    DWORD verHandle = 0;
+
+    char exePath[MAX_PATH];
+    DWORD len = GetModuleFileNameA(NULL, exePath, MAX_PATH);
+    if (len == 0 || len == MAX_PATH) {
+        MessageBoxW(NULL, L"Failed to get module file name.", L"Error", MB_OK | MB_ICONERROR);
+        return "unknown";
+    }
+
+    DWORD verSize = GetFileVersionInfoSizeA(exePath, &verHandle);
+    if (verSize == 0) {
+        MessageBoxW(NULL, L"Failed to get version info size.", L"Error", MB_OK | MB_ICONERROR);
+        return "unknown";
+    }
+
+    static char verData[256];
+    if (!GetFileVersionInfoA(exePath, verHandle, verSize, verData)) {
+        MessageBoxW(NULL, L"Failed to get version info data.", L"Error", MB_OK | MB_ICONERROR);
+        return "unknown";
+    }
+
+    VS_FIXEDFILEINFO *fileInfo = NULL;
+    UINT size = 0;
+    if (VerQueryValueA(verData, "\\", (LPVOID *)&fileInfo, &size) && size) {
+        sprintf(version, "%d.%d.%d.%d",
+                HIWORD(fileInfo->dwFileVersionMS),
+                LOWORD(fileInfo->dwFileVersionMS),
+                HIWORD(fileInfo->dwFileVersionLS),
+                LOWORD(fileInfo->dwFileVersionLS));
+    } else {
+        MessageBoxW(NULL, L"Failed to query version value.", L"Error", MB_OK | MB_ICONERROR);
+        strcpy(version, "unknown");
+    }
+    return version;
 }
 
 int toggle_fast_startup() {
@@ -187,6 +222,9 @@ void ShowTrayMenu(HWND hwnd) {
     int seconds = (int)(total_seconds % 60);
     int days = (int)(total_seconds / 86400);
 
+    // Get the version string
+    const char *version = get_version_string();
+
     char uptimeStr[64];
     if (days > 0) {
         sprintf(uptimeStr, "Uptime: %dd %02dh %02dm %02ds", days, hours, minutes, seconds);
@@ -194,103 +232,29 @@ void ShowTrayMenu(HWND hwnd) {
         sprintf(uptimeStr, "Uptime: %02dh %02dm %02ds", hours, minutes, seconds);
     }
 
-    wchar_t wideUptimeStr[64];
-    MultiByteToWideChar(CP_UTF8, 0, uptimeStr, -1, wideUptimeStr, sizeof(wideUptimeStr) / sizeof(wideUptimeStr[0]));
-
     POINT pt;
     GetCursorPos(&pt);
     HMENU hMenu = CreatePopupMenu();
-
-    MENUITEMINFO mii0 = {
-        .cbSize = sizeof(mii0),
-        .fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE,
-        .wID = ID_TRAY_INFO,
-        .dwTypeData = "SystemUP! - Uptime in Tray v0.0.0.1 by h4rl",
-        .fType = MFT_STRING
-    }; // Use the bitmap for the menu item
-
-    MENUITEMINFO mii1 = {
-        .cbSize = sizeof(mii1),
-        .fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE,
-        .wID = ID_TRAY_INFO,
-        .dwTypeData = uptimeStr,
-        .fType = MFT_STRING
-    };
-
-    MENUITEMINFO mii2 = {
-        .cbSize = sizeof(mii2),
-        .fMask = MIIM_STRING | MIIM_FTYPE,
-        .fType = MFT_SEPARATOR
-    };
-
-    MENUITEMINFO mii3 = {
-        .cbSize = sizeof(mii3),
-        .fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE,
-        .wID = ID_TRAY_FAST_STARTUP,
-        .fType = MFT_STRING,
-    };
+    char *fast_startup_text;
+    char title[64];
 
     if (fast_startup_enabled)
-        mii3.dwTypeData = "Fast Startup is: Enabled (click to disable)";
+        fast_startup_text = "Fast Startup is: Enabled (click to disable)";
     else
-        mii3.dwTypeData = "Fast Startup is: Disabled :D (click to enable)";
+        fast_startup_text = "Fast Startup is: Disabled :D (click to enable)";
 
+    sprintf(title, "SystemUP! - Uptime in Tray v%s by h4rl", version);
 
-    MENUITEMINFO mii4 = {
-        .cbSize = sizeof(mii4),
-        .fMask = MIIM_STRING | MIIM_FTYPE,
-        .fType = MFT_SEPARATOR
-    };
-
-    MENUITEMINFO mii5 = {
-        .cbSize = sizeof(mii5),
-        .fMask = MIIM_STRING | MIIM_FTYPE | MIIM_ID,
-        .wID = ID_TRAY_POWEROFF,
-        .fType = MFT_STRING,
-        .dwTypeData = "Shutdown Computer"
-    };
-
-    MENUITEMINFO mii6 = {
-        .cbSize = sizeof(mii6),
-        .fMask = MIIM_STRING | MIIM_FTYPE | MIIM_ID,
-        .wID = ID_TRAY_RESTART,
-        .fType = MFT_STRING,
-        .dwTypeData = "Restart Computer"
-    };
-
-
-    MENUITEMINFO mii7 = {
-        .cbSize = sizeof(mii7),
-        .fMask = MIIM_STRING | MIIM_FTYPE | MIIM_ID,
-        .wID = ID_TRAY_LOCK,
-        .fType = MFT_STRING,
-        .dwTypeData = "Lock Computer"
-    };
-
-    MENUITEMINFO mii8 = {
-        .cbSize = sizeof(mii8),
-        .fMask = MIIM_STRING | MIIM_FTYPE,
-        .fType = MFT_SEPARATOR
-    };
-
-    MENUITEMINFO mii9 = {
-        .cbSize = sizeof(mii9),
-        .fMask = MIIM_STRING | MIIM_ID | MIIM_FTYPE,
-        .wID = ID_TRAY_EXIT,
-        .dwTypeData = "Exit",
-        .fType = MFT_STRING
-    };
-
-    InsertMenuItem(hMenu, 0, TRUE, &mii0);
-    InsertMenuItem(hMenu, 1, TRUE, &mii1);
-    InsertMenuItem(hMenu, 2, TRUE, &mii2);
-    InsertMenuItem(hMenu, 3, TRUE, &mii3);
-    InsertMenuItem(hMenu, 4, TRUE, &mii4);
-    InsertMenuItem(hMenu, 5, TRUE, &mii5);
-    InsertMenuItem(hMenu, 6, TRUE, &mii6);
-    InsertMenuItem(hMenu, 7, TRUE, &mii7);
-    InsertMenuItem(hMenu, 8, TRUE, &mii8);
-    InsertMenuItem(hMenu, 9, TRUE, &mii9);
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_INFO, title);
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_INFO, uptimeStr);
+    AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_FAST_STARTUP, fast_startup_text);
+    AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_POWEROFF, "Shutdown Computer");
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_RESTART, "Restart Computer");
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_LOCK, "Lock Computer");
+    AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
+    AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT, "Exit");
 
     SetForegroundWindow(hwnd);
     TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, NULL);
@@ -298,9 +262,6 @@ void ShowTrayMenu(HWND hwnd) {
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    LPDRAWITEMSTRUCT lpdi = (LPDRAWITEMSTRUCT)lParam;
-    HICON hIconInfo = LoadIcon(NULL, IDI_INFORMATION); // Built-in info icon
-
     switch (msg) {
     case WM_CREATE:
         SetTimer(hwnd, TIMER_ID, 1000, NULL); // Update every second
@@ -319,6 +280,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         switch (LOWORD(wParam)) {
         case ID_TRAY_FAST_STARTUP:
             toggle_fast_startup();
+            is_fast_startup_enabled();
             break;
         case ID_TRAY_POWEROFF:
             if (MessageBoxW(hwnd, L"Are you sure you want to shutdown the computer?", L"Confirm Shutdown", MB_YESNO | MB_ICONQUESTION) == IDYES) {
