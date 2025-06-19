@@ -19,7 +19,7 @@ FILETYPE 0x1
       VALUE "OriginalFilename", "systemup.exe"
       VALUE "ProductName",      "SystemUP!"
       VALUE "ProductVersion",   "0.1.0.1"
-      VALUE "Comments",         "SystemIP! - See your uptime in your tray bar!"
+      VALUE "Comments",         "SystemUP! - See your uptime in your tray bar!"
       VALUE "Homepage",         "https://github.com/h4rldev/systemup"
       VALUE "License",          "BSD-3 Clause"
     }
