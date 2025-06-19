@@ -33,7 +33,7 @@ if (-not (Test-Path "$env:USERPROFILE\systemup\systemup.exe")) {
 
 # Create a scheduled task to run the script at startup
 $action = New-ScheduledTaskAction -Execute "$env:USERPROFILE\systemup\systemup.exe"
-$trigger = New-ScheduledTaskTrigger -AtLogOn
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
 
