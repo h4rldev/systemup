@@ -34,7 +34,8 @@ if (-not (Test-Path "$env:USERPROFILE\systemup\systemup.exe")) {
 # Create a scheduled task to run the script at startup
 $action = New-ScheduledTaskAction -Execute "$env:USERPROFILE\systemup\systemup.exe"
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+$trigger.Delay = "PT3S" # Delay of 3 seconds to ensure explorer is loaded
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Compatibility "Vista"
 $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Highest
 
 if (-not (Get-ScheduledTask -TaskName "Run SystemUP!" -ErrorAction SilentlyContinue)) {
